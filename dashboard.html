@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Floor Data Dashboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Shop Floor Report Dashboard</h1>
+            <p class="text-gray-500 mt-1">Live data submitted by operators.</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="search-input" class="block text-sm font-medium text-gray-700">Search (Shop Order, Part #, Initials)</label>
+                    <input type="text" id="search-input" placeholder="Type to search..." class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="date-filter" class="block text-sm font-medium text-gray-700">Filter by Date</label>
+                    <input type="date" id="date-filter" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700">&nbsp;</label>
+                    <button id="reset-filters" class="mt-1 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-md">Reset Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initials</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shop Order #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Good</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scrap</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Downtime (min)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Data rows will be inserted here -->
+                        <tr id="loading-row">
+                            <td colspan="8" class="text-center p-8 text-gray-500">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-2xl font-bold text-gray-800">Submission Details</h3>
+                <div class="cursor-pointer z-50" id="close-modal">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div id="modal-content" class="mt-4 max-h-[70vh] overflow-y-auto p-2">
+                <!-- Detailed content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "...", projectId: "..." };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-shop-form';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let allSubmissions = [];
+
+        // --- Initialize Firebase and Authenticate ---
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                const auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                console.log("Firebase initialized.");
+                fetchData();
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                document.getElementById('loading-row').innerHTML = `<td colspan="8" class="text-center p-8 text-red-500">Error connecting to database.</td>`;
+            }
+        }
+
+        // --- Data Fetching ---
+        async function fetchData() {
+            if (!db) return;
+            const q = query(collection(db, `artifacts/${appId}/public/data/submissions`), orderBy("submittedAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            allSubmissions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderTable(allSubmissions);
+        }
+
+        // --- Table Rendering ---
+        function renderTable(data) {
+            const tableBody = document.getElementById('data-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500">No submissions found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(sub => {
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">${sub.shiftDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${sub.operatorInitials}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${sub.shopOrder}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${sub.partNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-green-600 font-semibold">${sub.quantityGood}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-red-600 font-semibold">${sub.quantityScrapped}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${sub.totalDowntimeMinutes}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <button class="view-details-btn text-indigo-600 hover:text-indigo-900" data-id="${sub.id}">View</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+            
+            // Add event listeners to new buttons
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', () => openModal(button.dataset.id));
+            });
+        }
+        
+        // --- Filtering Logic ---
+        const searchInput = document.getElementById('search-input');
+        const dateFilter = document.getElementById('date-filter');
+        const resetBtn = document.getElementById('reset-filters');
+
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterDate = dateFilter.value;
+
+            const filteredData = allSubmissions.filter(sub => {
+                const matchesSearch = searchTerm === '' ||
+                    sub.shopOrder.toLowerCase().includes(searchTerm) ||
+                    sub.partNumber.toLowerCase().includes(searchTerm) ||
+                    sub.operatorInitials.toLowerCase().includes(searchTerm);
+                
+                const matchesDate = filterDate === '' || sub.shiftDate === filterDate;
+
+                return matchesSearch && matchesDate;
+            });
+
+            renderTable(filteredData);
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+        dateFilter.addEventListener('change', applyFilters);
+        resetBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            dateFilter.value = '';
+            renderTable(allSubmissions);
+        });
+
+        // --- Modal Logic ---
+        const modal = document.getElementById('details-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        function openModal(submissionId) {
+            const sub = allSubmissions.find(s => s.id === submissionId);
+            if (!sub) return;
+
+            let downtimeHtml = '<div><h4 class="text-lg font-semibold text-gray-700 mt-4">Downtime Entries</h4><ul class="list-disc list-inside mt-2 text-gray-600">';
+            if (sub.downtimeEntries && sub.downtimeEntries.length > 0) {
+                sub.downtimeEntries.forEach(d => {
+                    downtimeHtml += `<li>${d.reason}: <strong>${d.duration} min</strong></li>`;
+                });
+            } else {
+                downtimeHtml += '<li>No downtime recorded.</li>';
+            }
+            downtimeHtml += '</ul></div>';
+
+            let toolingHtml = '<div><h4 class="text-lg font-semibold text-gray-700 mt-4">Tooling Requests</h4><ul class="list-disc list-inside mt-2 text-gray-600">';
+            if (sub.toolingRequests && sub.toolingRequests.length > 0) {
+                sub.toolingRequests.forEach(t => {
+                    toolingHtml += `<li>${t.toolName} (${t.printNumber}): <strong>Qty ${t.amount}</strong></li>`;
+                });
+            } else {
+                toolingHtml += '<li>No tooling requested.</li>';
+            }
+            toolingHtml += '</ul></div>';
+            
+            let setupHtml = '<div><h4 class="text-lg font-semibold text-gray-700 mt-4">Setup Change Suggestion</h4>';
+            if (sub.setupChangeSuggestion && Object.values(sub.setupChangeSuggestion).some(v => v)) {
+                setupHtml += '<ul class="mt-2 space-y-1 text-gray-600">';
+                Object.entries(sub.setupChangeSuggestion).forEach(([key, value]) => {
+                    if(value) setupHtml += `<li><span class="font-semibold">${key.replace(/([A-Z])/g, ' $1').trim()}:</span> ${value}</li>`;
+                });
+                setupHtml += '</ul>';
+            } else {
+                setupHtml += '<p class="text-gray-600 mt-2">No setup change suggested.</p>';
+            }
+            setupHtml += '</div>';
+
+            modalContent.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Core Info -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-700">Core Information</h4>
+                        <p><strong>Submitted:</strong> ${new Date(sub.submittedAt).toLocaleString()}</p>
+                        <p><strong>Scrap Reason:</strong> ${sub.scrapReason}</p>
+                    </div>
+                    
+                    <!-- Issues -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-700 mt-4">Issues & Notes</h4>
+                        <p><strong>Maintenance:</strong> ${sub.maintenanceIssues || 'N/A'}</p>
+                        <p><strong>Quality:</strong> ${sub.qualityIssues || 'N/A'}</p>
+                        <p><strong>General Notes:</strong> ${sub.notes || 'N/A'}</p>
+                    </div>
+
+                    ${downtimeHtml}
+                    ${toolingHtml}
+                    ${setupHtml}
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+
+        // --- Initial Load ---
+        window.onload = initializeFirebase;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End of Shift / Order Form</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom style for disabled button */
+        .disabled-button {
+            cursor: not-allowed;
+            background-color: #9ca3af; /* gray-400 */
+        }
+        /* Styling for the details/summary element */
+        details > summary {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-4xl mx-auto bg-white p-8 sm:p-10 rounded-xl shadow-lg m-4">
+
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">End of Shift / Shop Order Report</h1>
+            <p class="text-gray-500 mt-2">Please fill out all fields accurately before submitting.</p>
+        </div>
+
+        <!-- Form Success/Error Message -->
+        <div id="message-box" class="hidden mb-6 p-4 rounded-md text-sm"></div>
+
+        <!-- Main Form -->
+        <form id="operator-form">
+            <!-- Section: Core Information -->
+            <div class="pb-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Core Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div>
+                        <label for="operator-name" class="block text-sm font-medium text-gray-700 mb-1">Initials</label>
+                        <input type="text" id="operator-name" name="operator-name" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="shift-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="date" id="shift-date" name="shift-date" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="shop-order" class="block text-sm font-medium text-gray-700 mb-1">Shop Order #</label>
+                        <input type="text" id="shop-order" name="shop-order" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="part-number" class="block text-sm font-medium text-gray-700 mb-1">Part #</label>
+                        <input type="text" id="part-number" name="part-number" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Capacity Metrics -->
+            <div class="py-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Production & Capacity Metrics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                     <div>
+                        <label for="run-time" class="block text-sm font-medium text-gray-700 mb-1">Actual Run Time (hours)</label>
+                        <input type="number" id="run-time" name="run-time" min="0" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="quantity-good" class="block text-sm font-medium text-gray-700 mb-1">Quantity Good / Completed</label>
+                        <input type="number" id="quantity-good" name="quantity-good" min="0" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label for="quantity-scrapped" class="block text-sm font-medium text-gray-700 mb-1">Quantity Scrapped</label>
+                        <input type="number" id="quantity-scrapped" name="quantity-scrapped" min="0" value="0" required class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="scrap-reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Scrap (if any)</label>
+                        <select id="scrap-reason" name="scrap-reason" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition bg-white">
+                            <option>Zero Scrap</option>
+                            <option>Missing Liner</option>
+                            <option>Peeling Liner</option>
+                            <option>Scoring</option>
+                            <option>Undersized OD</option>
+                            <option>Undersized ID</option>
+                            <option>Oversized OD</option>
+                            <option>Oversized ID</option>
+                            <option>Welds</option>
+                            <option>Undersized/Oversized thickness</option>
+                            <option>Burr</option>
+                            <option>Stamp Error</option>
+                            <option>Chamfer Run-Off OD</option>
+                            <option>Chamfer Run-Off ID</option>
+                            <option>OTHER (Explain Below)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Downtime Tracking -->
+            <div class="py-6 border-b border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Downtime Tracking</h2>
+                    <button type="button" id="add-downtime-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add Downtime</button>
+                </div>
+                <div id="downtime-entries" class="space-y-4">
+                    <!-- Downtime entries will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Section: Tooling Requests -->
+            <div class="py-6 border-b border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Tooling Requests</h2>
+                    <button type="button" id="add-tooling-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add Tooling Request</button>
+                </div>
+                <div id="tooling-entries" class="space-y-4">
+                    <!-- Tooling request entries will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Section: Setup Print Change Suggestion -->
+             <div class="py-6 border-b border-gray-200">
+                <details>
+                    <summary class="text-xl font-semibold text-gray-700 mb-4 list-none">
+                        <span class="flex items-center">
+                            Setup Print Change Suggestion
+                            <svg class="w-5 h-5 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div>
+                            <label for="setup-time" class="block text-sm font-medium text-gray-700 mb-1">Total time MIN (for setup only)</label>
+                            <input type="number" id="setup-time" name="setup-time" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="qualify-time" class="block text-sm font-medium text-gray-700 mb-1">Total Time MIN (Qualify Part)</label>
+                            <input type="number" id="qualify-time" name="qualify-time" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div class="md:col-span-2">
+                             <label for="setup-notes" class="block text-sm font-medium text-gray-700 mb-1">Setup Notes</label>
+                             <textarea id="setup-notes" name="setup-notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                        </div>
+                         <div>
+                            <label for="strip-width-slitting" class="block text-sm font-medium text-gray-700 mb-1">Strip Width Coming From Slitting (mm)</label>
+                            <input type="number" step="any" id="strip-width-slitting" name="strip-width-slitting" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="strip-width-bihler" class="block text-sm font-medium text-gray-700 mb-1">Strip Width Into Bihler (mm)</label>
+                            <input type="number" step="any" id="strip-width-bihler" name="strip-width-bihler" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                         <div>
+                            <label for="strip-thickness-in" class="block text-sm font-medium text-gray-700 mb-1">Strip Thickness Coming in (mm)</label>
+                            <input type="number" step="any" id="strip-thickness-in" name="strip-thickness-in" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="strip-thickness-bihler" class="block text-sm font-medium text-gray-700 mb-1">Strip Thickness Into Bihler (mm)</label>
+                            <input type="number" step="any" id="strip-thickness-bihler" name="strip-thickness-bihler" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="window-roll-shim" class="block text-sm font-medium text-gray-700 mb-1">Window Roll Shim (MM for 9,10,11 IN for others)</label>
+                            <input type="number" step="any" id="window-roll-shim" name="window-roll-shim" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="window-roll-pressure" class="block text-sm font-medium text-gray-700 mb-1">Window Roll Pressure</label>
+                            <input type="text" id="window-roll-pressure" name="window-roll-pressure" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                         <div>
+                            <label for="dbl" class="block text-sm font-medium text-gray-700 mb-1">DBL (MM for 9,10,11 IN for others)</label>
+                            <input type="number" step="any" id="dbl" name="dbl" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="mandrel-size" class="block text-sm font-medium text-gray-700 mb-1">Mandrel Size (MM for B9,10,11, IN for B2,3,4,5,6)</label>
+                            <input type="text" id="mandrel-size" name="mandrel-size" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="cal-die-size" class="block text-sm font-medium text-gray-700 mb-1">Calibration Die Size (MM for B9,10,11, IN for B2,3,4,5,6)</label>
+                            <input type="text" id="cal-die-size" name="cal-die-size" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </details>
+            </div>
+            
+            <!-- Section: Issues -->
+            <div class="py-6">
+                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Issues & Notes</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div>
+                        <label for="maintenance-issues" class="block text-sm font-medium text-gray-700 mb-1">Maintenance Issues</label>
+                        <textarea id="maintenance-issues" name="maintenance-issues" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Describe any maintenance problems..."></textarea>
+                    </div>
+                    <div>
+                        <label for="quality-issues" class="block text-sm font-medium text-gray-700 mb-1">Quality Issues</label>
+                        <textarea id="quality-issues" name="quality-issues" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Describe any part quality problems..."></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">General Notes / Comments</label>
+                        <textarea id="notes" name="notes" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mt-8 pt-6 border-t border-gray-200 text-right">
+                <button type="submit" id="submit-button" class="inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                    Submit Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Firebase App and Firestore -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "...", projectId: "..." };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-shop-form';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+
+        // --- Initialize Firebase and Authenticate ---
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                const auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                console.log("Firebase initialized and user authenticated.");
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                displayMessage("Could not connect to the database. Please refresh.", "error");
+            }
+        }
+        
+        // --- DOM Element References ---
+        const form = document.getElementById('operator-form');
+        const submitButton = document.getElementById('submit-button');
+        const messageBox = document.getElementById('message-box');
+        const addDowntimeBtn = document.getElementById('add-downtime-btn');
+        const downtimeEntriesContainer = document.getElementById('downtime-entries');
+        const addToolingBtn = document.getElementById('add-tooling-btn');
+        const toolingEntriesContainer = document.getElementById('tooling-entries');
+        let downtimeCounter = 0;
+        let toolingCounter = 0;
+
+        // --- Utility Functions ---
+        function displayMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = 'mb-6 p-4 rounded-md text-sm'; // Reset classes
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            }
+            messageBox.classList.remove('hidden');
+        }
+
+        // --- Downtime Entry Logic ---
+        function addDowntimeEntry() {
+            downtimeCounter++;
+            const entryHtml = `
+                <div id="downtime-entry-${downtimeCounter}" class="p-4 border border-gray-200 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="downtime-reason-${downtimeCounter}" class="block text-sm font-medium text-gray-600">Downtime Reason</label>
+                            <select name="downtime-reason-${downtimeCounter}" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition bg-white">
+                                <option>Jam Up (describe below)</option>
+                                <option>Worn Tooling</option>
+                                <option>Tooling Repair</option>
+                                <option>Washer</option>
+                                <option>Link Line</option>
+                                <option>Oil</option>
+                                <option>Diverter</option>
+                                <option>Rotary Table</option>
+                                <option>Vacuum</option>
+                                <option>RP Tank</option>
+                                <option>Pack Line</option>
+                                <option>Helicoil</option>
+                                <option>Cam Follower</option>
+                                <option>Welder</option>
+                                <option>Traction Rollers</option>
+                                <option>Conveyor</option>
+                                <option>Other/ Not Listed (Explain Below)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="downtime-minutes-${downtimeCounter}" class="block text-sm font-medium text-gray-600">Duration (minutes)</label>
+                            <input type="number" name="downtime-minutes-${downtimeCounter}" min="0" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="this.parentElement.parentElement.remove()" class="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800">Remove</button>
+                    </div>
+                </div>
+            `;
+            downtimeEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
+        }
+        addDowntimeBtn.addEventListener('click', addDowntimeEntry);
+
+        // --- Tooling Request Logic ---
+        function addToolingEntry() {
+            toolingCounter++;
+            const entryHtml = `
+                <div id="tooling-entry-${toolingCounter}" class="p-4 border border-gray-200 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="tooling-name-${toolingCounter}" class="block text-sm font-medium text-gray-600">Tool Name</label>
+                            <input type="text" name="tooling-name-${toolingCounter}" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="tooling-print-${toolingCounter}" class="block text-sm font-medium text-gray-600">Print Number</label>
+                            <input type="text" name="tooling-print-${toolingCounter}" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label for="tooling-amount-${toolingCounter}" class="block text-sm font-medium text-gray-600">Amount</label>
+                            <input type="number" name="tooling-amount-${toolingCounter}" min="1" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="this.parentElement.parentElement.remove()" class="px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800">Remove</button>
+                    </div>
+                </div>
+            `;
+            toolingEntriesContainer.insertAdjacentHTML('beforeend', entryHtml);
+        }
+        addToolingBtn.addEventListener('click', addToolingEntry);
+
+
+        // --- Form Submission Logic ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!db) {
+                 displayMessage("Database is not connected. Cannot submit.", "error");
+                 return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.classList.add('disabled-button');
+            submitButton.textContent = 'Submitting...';
+
+            const formData = new FormData(form);
+            
+            // Collect downtime entries
+            const downtimeData = [];
+            let totalDowntimeMinutes = 0;
+            document.querySelectorAll('[id^="downtime-entry-"]').forEach((entry) => {
+                const i = entry.id.split('-')[2];
+                const reason = formData.get(`downtime-reason-${i}`);
+                const minutes = formData.get(`downtime-minutes-${i}`);
+                if (reason && minutes) {
+                    const duration = Number(minutes);
+                    downtimeData.push({ reason, duration });
+                    totalDowntimeMinutes += duration;
+                }
+            });
+
+            // Collect tooling requests
+            const toolingData = [];
+            document.querySelectorAll('[id^="tooling-entry-"]').forEach((entry) => {
+                 const i = entry.id.split('-')[2];
+                 const toolName = formData.get(`tooling-name-${i}`);
+                 const printNumber = formData.get(`tooling-print-${i}`);
+                 const amount = formData.get(`tooling-amount-${i}`);
+                 if(toolName && printNumber && amount) {
+                     toolingData.push({ toolName, printNumber, amount: Number(amount) });
+                 }
+            });
+
+            // Collect Setup Print Change Suggestion data
+            const setupChangeSuggestion = {
+                setupTime: formData.get('setup-time'),
+                qualifyTime: formData.get('qualify-time'),
+                setupNotes: formData.get('setup-notes'),
+                stripWidthSlitting: formData.get('strip-width-slitting'),
+                stripWidthBihler: formData.get('strip-width-bihler'),
+                stripThicknessIn: formData.get('strip-thickness-in'),
+                stripThicknessBihler: formData.get('strip-thickness-bihler'),
+                windowRollShim: formData.get('window-roll-shim'),
+                windowRollPressure: formData.get('window-roll-pressure'),
+                dbl: formData.get('dbl'),
+                mandrelSize: formData.get('mandrel-size'),
+                calDieSize: formData.get('cal-die-size'),
+            };
+
+            const submissionData = {
+                operatorInitials: formData.get('operator-name'),
+                shiftDate: formData.get('shift-date'),
+                shopOrder: formData.get('shop-order'),
+                partNumber: formData.get('part-number'),
+                actualRunTimeHours: Number(formData.get('run-time')),
+                quantityGood: Number(formData.get('quantity-good')),
+                quantityScrapped: Number(formData.get('quantity-scrapped')),
+                scrapReason: formData.get('scrap-reason'),
+                maintenanceIssues: formData.get('maintenance-issues'),
+                qualityIssues: formData.get('quality-issues'),
+                notes: formData.get('notes'),
+                downtimeEntries: downtimeData,
+                totalDowntimeMinutes: totalDowntimeMinutes,
+                toolingRequests: toolingData,
+                setupChangeSuggestion: setupChangeSuggestion,
+                submittedAt: new Date().toISOString()
+            };
+            
+            try {
+                const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/submissions`), submissionData);
+                console.log("Document written with ID: ", docRef.id);
+                
+                displayMessage('Form submitted successfully!', 'success');
+                form.reset();
+                downtimeEntriesContainer.innerHTML = '';
+                toolingEntriesContainer.innerHTML = '';
+                downtimeCounter = 0;
+                toolingCounter = 0;
+                document.getElementById('shift-date').valueAsDate = new Date();
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                displayMessage('There was an error submitting the form. Please try again.', 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.classList.remove('disabled-button');
+                submitButton.textContent = 'Submit Report';
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 5000);
+            }
+        });
+
+        // --- Initial Page Load Setup ---
+        window.onload = () => {
+            document.getElementById('shift-date').valueAsDate = new Date();
+            initializeFirebase();
+        };
+
+    </script>
+</body>
+</html>
