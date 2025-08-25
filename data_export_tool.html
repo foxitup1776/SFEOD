@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Floor Data Export Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-2xl mx-auto bg-white p-8 sm:p-10 rounded-xl shadow-lg m-4">
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Shop Floor Data Export 📊</h1>
+            <p class="text-gray-500 mt-2">Select a date range to download raw data for analysis.</p>
+        </div>
+
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="startDate" class="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input type="date" id="startDate" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="endDate" class="block text-sm font-medium text-gray-700">End Date</label>
+                    <input type="date" id="endDate" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div id="statusMessage" class="hidden p-4 rounded-md text-sm"></div>
+
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button type="button" id="exportJsonBtn" class="w-full sm:w-1/2 flex-1 inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+                    Export JSON
+                </button>
+                <button type="button" id="exportCsvBtn" class="w-full sm:w-1/2 flex-1 inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
+                    Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where, orderBy, endAt, startAt } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs6ffwTDsQxptnpFdxIPdeRUND7cvm94c",
+            authDomain: "sfeod-2025.firebaseapp.com",
+            projectId: "sfeod-2025",
+            storageBucket: "sfeod-2025.firebasestorage.app",
+            messagingSenderId: "189312482883",
+            appId: "1:189312482883:web:8161ee4fe5bbfb35389ef6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const statusMessageDiv = document.getElementById('statusMessage');
+
+        // Fetch data based on the selected date range
+        async function fetchReportsByDateRange(startDate, endDate) {
+            if (!startDate || !endDate) {
+                showMessage("Please select both a start and end date.", 'error');
+                return null;
+            }
+            
+            const startOfDay = `${startDate}T00:00:00.000Z`;
+            const endOfDay = `${endDate}T23:59:59.999Z`;
+
+            try {
+                const reportsRef = collection(db, 'reports');
+                const q = query(
+                    reportsRef,
+                    orderBy("createdAt", "asc"),
+                    startAt(startOfDay),
+                    endAt(endOfDay)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (reports.length === 0) {
+                    showMessage("No reports found for the selected date range.", 'info');
+                    return null;
+                }
+
+                showMessage(`Found ${reports.length} reports.`, 'success');
+                return reports;
+
+            } catch (error) {
+                console.error("Error fetching reports:", error);
+                showMessage('An error occurred while fetching data.', 'error');
+                return null;
+            }
+        }
+
+        // Convert the fetched data to CSV format
+        function convertToCsv(data) {
+            if (data.length === 0) return '';
+            
+            // Collect all unique headers, including nested fields
+            const allKeys = new Set();
+            data.forEach(item => {
+                Object.keys(item).forEach(key => allKeys.add(key));
+            });
+
+            const headers = Array.from(allKeys).filter(h => h !== 'createdAt').sort(); // Sort headers for consistency
+
+            // Handle nested objects by creating new headers
+            const complexHeaders = ['downtime', 'toolingRequests', 'setupSuggestion'];
+            let finalHeaders = [];
+            headers.forEach(h => {
+                if (complexHeaders.includes(h)) {
+                    if (h === 'downtime') {
+                        finalHeaders.push('downtime_reason_1', 'downtime_duration_1');
+                    } else if (h === 'toolingRequests') {
+                         finalHeaders.push('tooling_name_1', 'tooling_print_1', 'tooling_amount_1');
+                    } else if (h === 'setupSuggestion') {
+                        // Dynamically add setup suggestion headers
+                        const setupKeys = Object.keys(data[0].setupSuggestion || {});
+                        setupKeys.forEach(key => finalHeaders.push(`setupSuggestion_${key}`));
+                    }
+                } else {
+                    finalHeaders.push(h);
+                }
+            });
+
+            // Fallback for simple reports without dynamic headers
+            if(finalHeaders.length === 0) {
+                 finalHeaders = headers;
+            }
+
+            const headerRow = finalHeaders.map(h => `"${h}"`).join(',');
+            const rows = data.map(item => {
+                const values = finalHeaders.map(header => {
+                    if (header.startsWith('downtime_')) {
+                        const index = parseInt(header.split('_')[2]) - 1;
+                        const key = header.split('_')[1];
+                        return item.downtime && item.downtime[index] ? `"${item.downtime[index][key] || ''}"` : '""';
+                    }
+                    if (header.startsWith('tooling_')) {
+                         const index = parseInt(header.split('_')[2]) - 1;
+                         const key = header.split('_')[1];
+                         return item.toolingRequests && item.toolingRequests[index] ? `"${item.toolingRequests[index][key] || ''}"` : '""';
+                    }
+                    if (header.startsWith('setupSuggestion_')) {
+                         const key = header.split('_')[1];
+                         return item.setupSuggestion ? `"${item.setupSuggestion[key] || ''}"` : '""';
+                    }
+                    
+                    const value = item[header];
+                    // Handle values that contain commas or quotes
+                    return value !== undefined && value !== null ? `"${String(value).replace(/"/g, '""')}"` : '""';
+                });
+                return values.join(',');
+            });
+            
+            return [headerRow, ...rows].join('\n');
+        }
+
+        // Helper function to trigger file download
+        function downloadFile(content, fileName, mimeType) {
+            const a = document.createElement('a');
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Show a temporary message to the user
+        function showMessage(message, type) {
+            statusMessageDiv.textContent = message;
+            statusMessageDiv.className = `p-4 rounded-md text-sm ${type === 'success' ? 'bg-green-100 text-green-800' : type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`;
+            statusMessageDiv.classList.remove('hidden');
+            setTimeout(() => statusMessageDiv.classList.add('hidden'), 5000);
+        }
+
+        // Event Listeners for buttons
+        exportJsonBtn.addEventListener('click', async () => {
+            const reports = await fetchReportsByDateRange(startDateInput.value, endDateInput.value);
+            if (reports) {
+                const jsonData = JSON.stringify(reports, null, 2);
+                downloadFile(jsonData, `shop_floor_reports_${startDateInput.value}_to_${endDateInput.value}.json`, 'application/json');
+            }
+        });
+
+        exportCsvBtn.addEventListener('click', async () => {
+            const reports = await fetchReportsByDateRange(startDateInput.value, endDateInput.value);
+            if (reports) {
+                const csvData = convertToCsv(reports);
+                downloadFile(csvData, `shop_floor_reports_${startDateInput.value}_to_${endDateInput.value}.csv`, 'text/csv');
+            }
+        });
+
+    </script>
+</body>
+</html>
